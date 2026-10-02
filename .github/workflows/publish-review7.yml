@@ -1,0 +1,44 @@
+name: Publish REVIEW7 JAR
+
+on:
+  push:
+    branches:
+      - adventureworld-review7-download
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: adventureworld-review7-download
+
+      - name: Extract verified REVIEW7 JAR
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf /tmp/review7
+          mkdir -p /tmp/review7 downloads
+          unzip -q release-input/AbszAdventureWorld-REVIEW7-FixAll-build-artifact.zip -d /tmp/review7
+          jar="$(find /tmp/review7 -type f -name 'AbszAdventureWorld-0.9.0-REVIEW7-FIXALL-JAVA25-PAPER26.2.jar' -print -quit)"
+          test -n "$jar"
+          cp "$jar" downloads/AbszAdventureWorld-0.9.0-REVIEW7-FIXALL-JAVA25-PAPER26.2.jar
+          sha256sum downloads/AbszAdventureWorld-0.9.0-REVIEW7-FIXALL-JAVA25-PAPER26.2.jar | tee downloads/SHA256SUMS.txt
+
+      - name: Commit downloadable JAR
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git config user.name "AbszBuilder"
+          git config user.email "veltrorisekto@gmail.com"
+          git add downloads/
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Publish AbszAdventureWorld REVIEW7 downloadable JAR [skip ci]"
+            git push origin HEAD:adventureworld-review7-download
+          fi
